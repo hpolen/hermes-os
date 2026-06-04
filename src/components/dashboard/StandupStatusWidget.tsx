@@ -11,7 +11,9 @@ export function StandupStatusWidget() {
   const [standups, setStandups] = useState<StandupEntry[]>([])
   const [streak, setStreak] = useState(0)
   const [loading, setLoading] = useState(true)
-  const hour = new Date().getHours()
+  const [hour, setHour] = useState(0)
+
+  useEffect(() => { setHour(new Date().getHours()) }, [])
 
   useEffect(() => {
     async function load() {

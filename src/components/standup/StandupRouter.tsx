@@ -14,7 +14,8 @@ function todayDate() {
 export function StandupRouter() {
   const [standups, setStandups] = useState<StandupEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const hour = new Date().getHours()
+  const [hour, setHour] = useState(0)
+  const [mounted, setMounted] = useState(false)
   const today = todayDate()
 
   async function load() {
@@ -28,7 +29,11 @@ export function StandupRouter() {
     }
   }
 
-  useEffect(() => { load() }, [today])
+  useEffect(() => {
+    setHour(new Date().getHours())
+    setMounted(true)
+    load()
+  }, [today])
 
   if (loading) {
     return (
