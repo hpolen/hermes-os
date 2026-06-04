@@ -22,22 +22,30 @@ export type ProjectStatus =
   | 'paused'
   | 'completed'
   | 'archived'
-  | 'planning';
+  | 'planning'
+  | 'incubation';
 
 // ─── Project ─────────────────────────────────────────────────
 export interface Project {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   status: ProjectStatus;
   health: HealthStatus;
   tier: PriorityTier;
-  ownerId: string;
+  ownerId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  lastActivity?: Timestamp;
   dueDate?: Timestamp;
   tags?: string[];
   metadata?: Record<string, unknown>;
+  // Extended portfolio fields
+  mission?: string;
+  goals?: string[];
+  risks?: string[];
+  dependencies?: string[];
+  assignedAgents?: string[];
 }
 
 // ─── Task ────────────────────────────────────────────────────
@@ -58,6 +66,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   assigneeId?: string;
+  blockedReason?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   dueDate?: Timestamp;
@@ -102,6 +111,7 @@ export interface StandupEntry {
 
   // Morning fields
   goals?: string[];          // up to 3 goals
+  topGoals?: string[];       // alias for goals used in some components
   projectId?: string;        // primary project focus
   blockers?: string;         // optional blockers
   energyLevel?: number;      // 1–5
