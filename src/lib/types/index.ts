@@ -50,13 +50,14 @@ export interface Project {
 
 // ─── Task ────────────────────────────────────────────────────
 export type TaskStatus =
-  | 'todo'
+  | 'backlog'
+  | 'ready'
   | 'in_progress'
   | 'blocked'
-  | 'done'
-  | 'cancelled';
+  | 'completed'
+  | 'deferred';
 
-export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
+export type TaskPriority = 'high' | 'medium' | 'low';
 
 export interface Task {
   id: string;
@@ -130,14 +131,22 @@ export interface StandupEntry {
 
 // ─── Timeline ────────────────────────────────────────────────
 export type TimelineEventType =
+  | 'created'
   | 'standup_morning'
   | 'standup_midday'
   | 'standup_evening'
+  | 'standup_mention'
   | 'task_created'
+  | 'task_added'
   | 'task_completed'
   | 'project_status_changed'
+  | 'status_change'
   | 'agent_deployed'
+  | 'agent_assigned'
   | 'milestone_reached'
+  | 'milestone'
+  | 'decision'
+  | 'note'
   | 'note_added';
 
 export interface TimelineEvent {
