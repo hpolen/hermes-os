@@ -3,8 +3,8 @@ import {
   getDocs,
   addDoc,
   query,
-  orderBy,
   where,
+  orderBy,
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config'
@@ -15,11 +15,16 @@ const COL = 'standups'
 export async function getTodayStandups(date: string): Promise<StandupEntry[]> {
   const q = query(
     collection(db, COL),
-    where('date', '==', date),
-    orderBy('createdAt')
+    where('date', '==', date)
   )
   const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as StandupEntry))
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as StandupEntry))
+    .sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() ?? 0
+      const bTime = b.createdAt?.toMillis?.() ?? 0
+      return aTime - bTime
+    })
 }
 
 export async function createStandup(

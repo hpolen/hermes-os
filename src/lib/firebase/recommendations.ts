@@ -38,9 +38,15 @@ export async function dismissRecommendation(id: string): Promise<void> {
 export async function createRecommendation(
   data: Omit<Recommendation, 'id' | 'createdAt'>
 ): Promise<string> {
-  const ref = await addDoc(collection(db, 'recommendations'), {
-    ...data,
+  const payload: Record<string, unknown> = {
+    text: data.text,
+    type: data.type,
+    dismissed: data.dismissed,
     createdAt: serverTimestamp(),
-  })
+  }
+  if (data.projectId !== undefined) {
+    payload.projectId = data.projectId
+  }
+  const ref = await addDoc(collection(db, 'recommendations'), payload)
   return ref.id
 }
