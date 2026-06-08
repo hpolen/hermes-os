@@ -337,12 +337,14 @@ export async function GET() {
       const avgAmount = amounts.reduce((s, v) => s + v, 0) / amounts.length
       const amountCV = coefficientOfVariation(amounts)
 
-      // Skip if amounts are wildly inconsistent (CV > 0.20)
-      if (amountCV > 0.20) continue
-
-      // Confidence scoring
+      // Confidence scoring (computed before the CV gate so known services get a pass)
       const knownService = lookupKnownService(key)
       const isKnown = knownService !== null
+
+      // Skip if amounts are wildly inconsistent — but give known services a wider berth
+      // (usage-based billing like Render, AWS, etc. can vary by ~40%)
+      const amountCVLimit = isKnown ? 0.40 : 0.20
+      if (amountCV > amountCVLimit) continue
       const highConfidence =
         (intervalCV < 0.10 && amountCV < 0.05) ||
         (isKnown && frequency !== null)
