@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { format, addDays } from 'date-fns'
 import {
   Target, ChevronLeft, ChevronRight, RefreshCw,
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Pillar, Initiative, DailyTask } from '@/lib/types'
 import { getPillars } from '@/lib/firebase/pillars'
 import { getInitiatives } from '@/lib/firebase/initiatives'
-import { getDailyTasks, createDailyTask, updateDailyTask, rollTask } from '@/lib/firebase/dailyTasks'
+import { getDailyTasks, createDailyTask, updateDailyTask, rollTask, deleteDailyTask } from '@/lib/firebase/dailyTasks'
 import { TaskInput } from '@/components/focus/TaskInput'
 import { TaskItem } from '@/components/focus/TaskItem'
 import { DailyProgress } from '@/components/focus/DailyProgress'
@@ -105,6 +105,8 @@ export default function FocusPage() {
   const [saving, setSaving] = useState<Set<string>>(new Set())
   const [selectedPillarId, setSelectedPillarId] = useState<string | null>(null)
   const [seeded, setSeeded] = useState(false)
+  const [autoRollBanner, setAutoRollBanner] = useState<string | null>(null)
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Seed pillars + initiatives on first load
   const ensureSeeded = useCallback(async () => {
@@ -127,13 +129,41 @@ export default function FocusPage() {
       ])
       setPillars(p)
       setInitiatives(i)
-      setTasks(t)
+
+      // Auto-roll yesterday's incomplete tasks — only when loading today
+      if (d === TODAY) {
+        const yesterday = format(addDays(new Date(), -1), 'yyyy-MM-dd')
+        const yesterdayTasks = await getDailyTasks(yesterday)
+        const unfinished = yesterdayTasks.filter(task => task.status === 'todo')
+        if (unfinished.length > 0) {
+          await Promise.all(unfinished.map(task => rollTask(task, TODAY)))
+          // Reload today's tasks to include the newly rolled items
+          const refreshed = await getDailyTasks(d)
+          setTasks(refreshed)
+          // Show banner
+          const msg = `↺ ${unfinished.length} task${unfinished.length === 1 ? '' : 's'} rolled from yesterday`
+          setAutoRollBanner(msg)
+          if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+          bannerTimerRef.current = setTimeout(() => setAutoRollBanner(null), 4000)
+        } else {
+          setTasks(t)
+        }
+      } else {
+        setTasks(t)
+      }
     } finally {
       setLoading(false)
     }
   }, [ensureSeeded])
 
   useEffect(() => { void load(date) }, [date, load])
+
+  // Cleanup banner timer on unmount
+  useEffect(() => {
+    return () => {
+      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+    }
+  }, [])
 
   const isToday = date === TODAY
 
@@ -165,22 +195,32 @@ export default function FocusPage() {
     }
   }
 
-  async function handleRoll(task: DailyTask) {
-    const tomorrow = format(addDays(new Date(date + 'T12:00:00'), 1), 'yyyy-MM-dd')
+  async function handleUncomplete(task: DailyTask) {
     setSaving(prev => new Set(prev).add(task.id))
     try {
-      await rollTask(task, tomorrow)
+      // Only update status — completedAt is metadata; clear it locally
+      await updateDailyTask(task.id, { status: 'todo' })
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'todo', completedAt: undefined } : t))
+    } finally {
+      setSaving(prev => { const n = new Set(prev); n.delete(task.id); return n })
+    }
+  }
+
+  async function handleRoll(task: DailyTask, toDate: string) {
+    setSaving(prev => new Set(prev).add(task.id))
+    try {
+      await rollTask(task, toDate)
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'rolled' } : t))
     } finally {
       setSaving(prev => { const n = new Set(prev); n.delete(task.id); return n })
     }
   }
 
-  async function handleDrop(task: DailyTask) {
+  async function handleDelete(task: DailyTask) {
     setSaving(prev => new Set(prev).add(task.id))
     try {
-      await updateDailyTask(task.id, { status: 'dropped' })
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'dropped' } : t))
+      await deleteDailyTask(task.id)
+      setTasks(prev => prev.filter(t => t.id !== task.id))
     } finally {
       setSaving(prev => { const n = new Set(prev); n.delete(task.id); return n })
     }
@@ -212,6 +252,22 @@ export default function FocusPage() {
     : date === format(addDays(new Date(), -1), 'yyyy-MM-dd')
     ? 'Yesterday'
     : format(new Date(date + 'T12:00:00'), 'EEE, MMM d')
+
+  // Shared TaskItem props factory
+  const taskItemProps = (task: DailyTask) => ({
+    task,
+    pillar: taskPillar(task),
+    initiative: taskInitiative(task),
+    pillars,
+    initiatives,
+    onComplete: handleComplete,
+    onUncomplete: handleUncomplete,
+    onRoll: handleRoll,
+    onDelete: handleDelete,
+    onAssignPillar: handleAssignPillar,
+    onAssignInitiative: handleAssignInitiative,
+    loading: saving.has(task.id),
+  })
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
@@ -262,6 +318,20 @@ export default function FocusPage() {
         {/* Left: main task area */}
         <div className="lg:col-span-2 space-y-4">
 
+          {/* Auto-roll banner */}
+          {autoRollBanner && (
+            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
+              <span>{autoRollBanner}</span>
+              <button
+                onClick={() => setAutoRollBanner(null)}
+                className="ml-3 text-amber-400/60 hover:text-amber-400 transition-colors"
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Progress card */}
           {allActive.length > 0 && (
             <Card>
@@ -299,20 +369,7 @@ export default function FocusPage() {
           {!loading && activeTasks.length > 0 && (
             <div className="space-y-2">
               {activeTasks.map(task => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  pillar={taskPillar(task)}
-                  initiative={taskInitiative(task)}
-                  pillars={pillars}
-                  initiatives={initiatives}
-                  onComplete={handleComplete}
-                  onRoll={handleRoll}
-                  onDrop={handleDrop}
-                  onAssignPillar={handleAssignPillar}
-                  onAssignInitiative={handleAssignInitiative}
-                  loading={saving.has(task.id)}
-                />
+                <TaskItem key={task.id} {...taskItemProps(task)} />
               ))}
             </div>
           )}
@@ -347,20 +404,7 @@ export default function FocusPage() {
               </div>
               <div className="space-y-1">
                 {doneTasks.map(task => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    pillar={taskPillar(task)}
-                    initiative={taskInitiative(task)}
-                    pillars={pillars}
-                    initiatives={initiatives}
-                    onComplete={handleComplete}
-                    onRoll={handleRoll}
-                    onDrop={handleDrop}
-                    onAssignPillar={handleAssignPillar}
-                    onAssignInitiative={handleAssignInitiative}
-                    loading={saving.has(task.id)}
-                  />
+                  <TaskItem key={task.id} {...taskItemProps(task)} />
                 ))}
               </div>
             </div>
@@ -378,20 +422,7 @@ export default function FocusPage() {
               </div>
               <div className="space-y-1">
                 {inactiveTasks.map(task => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    pillar={taskPillar(task)}
-                    initiative={taskInitiative(task)}
-                    pillars={pillars}
-                    initiatives={initiatives}
-                    onComplete={handleComplete}
-                    onRoll={handleRoll}
-                    onDrop={handleDrop}
-                    onAssignPillar={handleAssignPillar}
-                    onAssignInitiative={handleAssignInitiative}
-                    loading={saving.has(task.id)}
-                  />
+                  <TaskItem key={task.id} {...taskItemProps(task)} />
                 ))}
               </div>
             </div>

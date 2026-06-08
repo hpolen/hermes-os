@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { format, addDays } from 'date-fns'
 import { Check, RotateCcw, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { DailyTask, Pillar, Initiative } from '@/lib/types'
 import { PillarBadge } from './PillarBadge'
@@ -11,8 +12,9 @@ interface TaskItemProps {
   pillars: Pillar[]
   initiatives: Initiative[]
   onComplete: (task: DailyTask) => void
-  onRoll: (task: DailyTask) => void
-  onDrop: (task: DailyTask) => void
+  onUncomplete: (task: DailyTask) => void
+  onRoll: (task: DailyTask, toDate: string) => void
+  onDelete: (task: DailyTask) => void
   onAssignPillar: (task: DailyTask, pillarId: string | null) => void
   onAssignInitiative: (task: DailyTask, initiativeId: string | null) => void
   loading?: boolean
@@ -25,13 +27,32 @@ export function TaskItem({
   pillars,
   initiatives,
   onComplete,
+  onUncomplete,
   onRoll,
-  onDrop,
+  onDelete,
   onAssignPillar,
   onAssignInitiative,
   loading,
 }: TaskItemProps) {
   const [expanded, setExpanded] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showRollPicker, setShowRollPicker] = useState(false)
+
+  const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd')
+  const in2Days = format(addDays(new Date(), 2), 'yyyy-MM-dd')
+  const [selectedDate, setSelectedDate] = useState(tomorrow)
+
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Auto-cancel delete confirmation after 3 seconds
+  useEffect(() => {
+    if (confirmDelete) {
+      confirmTimerRef.current = setTimeout(() => setConfirmDelete(false), 3000)
+    }
+    return () => {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current)
+    }
+  }, [confirmDelete])
 
   const isDone = task.status === 'done'
   const isRolled = task.status === 'rolled'
@@ -51,13 +72,20 @@ export function TaskItem({
       <div className="flex items-start gap-3 px-4 py-3">
         {/* Complete checkbox */}
         <button
-          onClick={() => !isInactive && onComplete(task)}
-          disabled={isInactive || loading}
+          onClick={() => {
+            if (isDone) {
+              onUncomplete(task)
+            } else if (!isInactive) {
+              onComplete(task)
+            }
+          }}
+          disabled={(isInactive && !isDone) || loading}
+          title={isDone ? 'Mark incomplete' : 'Mark complete'}
           className={`
             mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center
             transition-all
             ${isDone
-              ? 'bg-green-500 border-green-500'
+              ? 'bg-green-500 border-green-500 hover:bg-green-600 cursor-pointer'
               : 'border-muted-foreground/40 hover:border-green-400 hover:bg-green-400/10'}
             ${isInactive && !isDone ? 'opacity-40 cursor-default' : ''}
           `}
@@ -77,7 +105,7 @@ export function TaskItem({
               </span>
             )}
             {isRolled && (
-              <span className="text-[10px] text-muted-foreground/50">→ moved to tomorrow</span>
+              <span className="text-[10px] text-muted-foreground/50">→ moved</span>
             )}
             {isDropped && (
               <span className="text-[10px] text-muted-foreground/50">dropped</span>
@@ -95,9 +123,9 @@ export function TaskItem({
           </div>
         </div>
 
-        {/* Actions — shown on hover or expanded */}
+        {/* Actions — shown on hover or when a panel is open */}
         {!isInactive && (
-          <div className={`flex items-center gap-1 flex-shrink-0 transition-opacity ${expanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+          <div className={`flex items-center gap-1 flex-shrink-0 transition-opacity ${expanded || showRollPicker || confirmDelete ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
             <button
               onClick={() => setExpanded(e => !e)}
               className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors"
@@ -105,25 +133,90 @@ export function TaskItem({
             >
               {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
+
+            {/* Roll button */}
             <button
-              onClick={() => onRoll(task)}
+              onClick={() => {
+                setShowRollPicker(v => !v)
+                setSelectedDate(tomorrow)
+              }}
               disabled={loading}
               className="p-1 text-muted-foreground hover:text-amber-400 rounded transition-colors"
-              title="Roll to tomorrow"
+              title="Roll to date"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
-            <button
-              onClick={() => onDrop(task)}
-              disabled={loading}
-              className="p-1 text-muted-foreground hover:text-red-400 rounded transition-colors"
-              title="Drop task"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+
+            {/* Delete button / confirmation */}
+            {confirmDelete ? (
+              <span className="flex items-center gap-1 text-[10px]">
+                <button
+                  onClick={() => { onDelete(task); setConfirmDelete(false) }}
+                  className="px-1.5 py-0.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded transition-colors font-medium"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-1.5 py-0.5 bg-muted text-muted-foreground hover:text-foreground rounded transition-colors"
+                >
+                  No
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                disabled={loading}
+                className="p-1 text-muted-foreground hover:text-red-400 rounded transition-colors"
+                title="Delete task"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      {/* Roll date picker panel */}
+      {showRollPicker && !isInactive && (
+        <div className="px-4 pb-3 pt-0 border-t border-border/40 mt-1">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium mb-2">Roll to</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setSelectedDate(tomorrow)}
+              className={`text-[10px] px-2 py-1 rounded border transition-all ${selectedDate === tomorrow ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' : 'border-border/50 text-muted-foreground hover:border-border'}`}
+            >
+              Tomorrow
+            </button>
+            <button
+              onClick={() => setSelectedDate(in2Days)}
+              className={`text-[10px] px-2 py-1 rounded border transition-all ${selectedDate === in2Days ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' : 'border-border/50 text-muted-foreground hover:border-border'}`}
+            >
+              In 2 days
+            </button>
+            <input
+              type="date"
+              min={tomorrow}
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="text-[10px] px-2 py-1 rounded border border-border/50 bg-background text-foreground focus:outline-none focus:border-amber-500/50"
+            />
+            <button
+              onClick={() => { onRoll(task, selectedDate); setShowRollPicker(false) }}
+              disabled={loading || !selectedDate}
+              className="text-[10px] px-2 py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-400 hover:bg-amber-500/30 transition-colors font-medium disabled:opacity-50"
+            >
+              Roll ↺
+            </button>
+            <button
+              onClick={() => setShowRollPicker(false)}
+              className="text-[10px] px-2 py-1 rounded border border-border/50 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Expanded: tag/link panel */}
       {expanded && !isInactive && (
