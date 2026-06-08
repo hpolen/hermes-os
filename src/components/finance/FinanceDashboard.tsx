@@ -48,6 +48,7 @@ import {
 import { NetWorthWidget } from '@/components/finance/NetWorthWidget'
 import { SubscriptionsWidget } from '@/components/finance/SubscriptionsWidget'
 import { BudgetTrackerWidget } from '@/components/finance/BudgetTrackerWidget'
+import { BillsWidget } from '@/components/finance/BillsWidget'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -997,6 +998,9 @@ export function FinanceDashboard() {
 
           {/* Budget Tracker */}
           <BudgetTrackerWidget spending={spending} loadingSpending={loadingSpending} />
+
+          {/* Bills & Payments */}
+          <BillsWidget />
 
           {/* Transactions */}
           <Card>
