@@ -9,6 +9,7 @@ import {
   BookOpen,
   BarChart3,
   Settings,
+  Timer,
 } from 'lucide-react'
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { label: 'Projects', href: '/projects', icon: FolderKanban },
   { label: 'Standup', href: '/standup', icon: ClipboardList },
   { label: 'Agents', href: '/agents', icon: Bot },
+  { label: 'Cron Jobs', href: '/cronjobs', icon: Timer },
   { label: 'Knowledge', href: '/knowledge', icon: BookOpen },
   { label: 'Reviews', href: '/reviews', icon: BarChart3 },
   { label: 'Settings', href: '/settings', icon: Settings },
