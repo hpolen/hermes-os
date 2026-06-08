@@ -192,6 +192,64 @@ export interface Idea {
   notes?: string;
 }
 
+// ─── Focus / Daily Work ──────────────────────────────────────
+
+/**
+ * Pillar — top-level domain of work (5-6 max, mostly stable).
+ * E.g. "EA Program", "Security Architecture", "ATLAS", "Hermes OS"
+ */
+export interface Pillar {
+  id: string;
+  name: string;
+  shortKey: string;      // 1-2 char keyboard shortcut, e.g. "E", "S", "A"
+  color: string;         // Tailwind color token, e.g. "blue", "violet", "green"
+  emoji?: string;        // Optional icon, e.g. "🏛️"
+  order: number;
+  agentEnabled: boolean; // Can Alfred take action on this pillar?
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+/**
+ * Initiative — a meaningful piece of work under a Pillar.
+ * Lives for weeks to months. Links daily tasks upward to impact.
+ */
+export type InitiativeStatus = 'active' | 'on_hold' | 'completed' | 'cancelled';
+
+export interface Initiative {
+  id: string;
+  pillarId: string;
+  name: string;
+  description?: string;
+  status: InitiativeStatus;
+  order: number;
+  projectId?: string;    // Optional link to Projects tab
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+/**
+ * DailyTask — the hand-written to-do.
+ * Lives on a specific date. Fast to create, satisfying to complete.
+ */
+export type DailyTaskStatus = 'todo' | 'done' | 'rolled' | 'dropped';
+
+export interface DailyTask {
+  id: string;
+  userId: string;
+  date: string;          // YYYY-MM-DD
+  text: string;
+  status: DailyTaskStatus;
+  order: number;         // for drag-reorder
+  pillarId?: string;     // optional tag
+  initiativeId?: string; // optional link upward
+  rollCount: number;     // how many times pushed to next day
+  rolledFromDate?: string;
+  completedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────
 
 /**

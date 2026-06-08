@@ -4,9 +4,11 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Dashboard',
+  '/focus': 'Daily Focus',
   '/projects': 'Projects',
   '/standup': 'Standup',
   '/agents': 'Agents',
+  '/cronjobs': 'Cron Jobs',
   '/knowledge': 'Knowledge',
   '/reviews': 'Reviews',
   '/settings': 'Settings',

@@ -10,10 +10,12 @@ import {
   BarChart3,
   Settings,
   Timer,
+  Target,
 } from 'lucide-react'
 
 const navItems = [
   { label: 'Home', href: '/', icon: LayoutDashboard },
+  { label: 'Daily Focus', href: '/focus', icon: Target },
   { label: 'Projects', href: '/projects', icon: FolderKanban },
   { label: 'Standup', href: '/standup', icon: ClipboardList },
   { label: 'Agents', href: '/agents', icon: Bot },
