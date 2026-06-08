@@ -196,15 +196,15 @@ function OfflineBanner() {
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
       <WifiOff className="w-12 h-12 text-slate-400" />
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Finance service offline</h2>
+        <h2 className="text-lg font-semibold text-foreground">Awaiting first sync</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-md">
-          The goetta-finance daemon isn&apos;t running. Start it locally to see your accounts,
-          transactions, and spending.
+          Your financial data is being synced. Alfred runs an automatic sync every 6 hours —
+          or trigger one manually from your local machine.
         </p>
       </div>
       <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-4 py-3 font-mono text-left max-w-sm">
-        <div className="text-muted-foreground/70 mb-1"># Start goetta-finance</div>
-        <div>goetta-finance serve</div>
+        <div className="text-muted-foreground/70 mb-1"># Force sync now (local machine)</div>
+        <div>goetta-finance sync</div>
       </div>
     </div>
   )

@@ -1,36 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { mcpCall } from '@/lib/finance/mcpClient'
+import { getAdminDb } from '@/lib/firebase/admin'
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl
-    const args: Record<string, unknown> = {}
+    const { searchParams } = new URL(req.url)
+    const accountId = searchParams.get('account_id') ?? 'all'
+    const category = searchParams.get('category') ?? 'all'
+    const search = searchParams.get('search') ?? ''
+    const limitN = parseInt(searchParams.get('limit') ?? '500', 10)
 
-    const accountId = searchParams.get('account_id')
-    const start = searchParams.get('start')
-    const end = searchParams.get('end')
-    const category = searchParams.get('category')
-    const search = searchParams.get('search')
-    const limitStr = searchParams.get('limit')
+    const db = getAdminDb()
+    let q = db.collection('finance_transactions').orderBy('posted', 'desc')
 
-    if (accountId) args.account_id = accountId
-    if (start) args.start = start
-    if (end) args.end = end
-    if (category) args.category = category
-    if (search) args.search = search
-    if (limitStr) args.limit = parseInt(limitStr, 10)
+    if (accountId !== 'all') q = q.where('account_id', '==', accountId) as typeof q
+    if (category !== 'all') q = q.where('category', '==', category) as typeof q
 
-    const result = await mcpCall('get_transactions', args)
-    return NextResponse.json(result)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const isOffline =
-      message.includes('ECONNREFUSED') ||
-      message.includes('fetch failed') ||
-      message.includes('daemon')
-    return NextResponse.json(
-      { error: message, offline: isOffline },
-      { status: isOffline ? 503 : 500 }
-    )
+    q = q.limit(limitN) as typeof q
+
+    const snap = await q.get()
+    let txns = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+
+    // Client-side search filter (Firestore doesn't support full-text)
+    if (search) {
+      const lower = search.toLowerCase()
+      txns = txns.filter((t: Record<string, unknown>) => {
+        const desc = (t.description as string ?? '').toLowerCase()
+        const payee = (t.payee as string ?? '').toLowerCase()
+        return desc.includes(lower) || payee.includes(lower)
+      })
+    }
+
+    return NextResponse.json(txns)
+  } catch (err) {
+    console.error('[finance/transactions]', err)
+    return NextResponse.json({ error: 'internal' }, { status: 500 })
   }
 }
