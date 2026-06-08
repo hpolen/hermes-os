@@ -244,6 +244,7 @@ export default function CronJobsPage() {
   const [jobs, setJobs] = useState<CronJob[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [toggling, setToggling] = useState<Set<string>>(new Set())
   const [jobErrors, setJobErrors] = useState<Record<string, string>>({})
 
@@ -253,8 +254,9 @@ export default function CronJobsPage() {
     try {
       const res = await fetch('/api/cronjobs')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json() as { jobs: CronJob[] }
+      const data = await res.json() as { jobs: CronJob[]; notice?: string }
       setJobs(data.jobs)
+      setNotice(data.notice ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -337,6 +339,14 @@ export default function CronJobsPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Notice banner (e.g. sync not running) */}
+      {notice && (
+        <div className="flex items-center gap-2 text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-3">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {notice}
         </div>
       )}
 

@@ -53,11 +53,17 @@ export async function GET(req: NextRequest) {
     const db = getAdminDb()
     const snap = await db.collection('cron_actions')
       .where('status', '==', 'pending')
-      .orderBy('createdAt')
       .limit(20)
       .get()
 
-    const actions = snap.docs.map(d => ({ docId: d.id, ...d.data() }))
+    // Sort by createdAt client-side to avoid composite index requirement
+    const actions = snap.docs
+      .map(d => ({ docId: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const aTs = (a as Record<string, {_seconds?: number}>).createdAt?._seconds ?? 0
+        const bTs = (b as Record<string, {_seconds?: number}>).createdAt?._seconds ?? 0
+        return aTs - bTs
+      })
     return NextResponse.json({ actions })
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 })
