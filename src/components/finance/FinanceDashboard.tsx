@@ -16,6 +16,7 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  Receipt,
 } from 'lucide-react'
 import {
   PieChart,
@@ -48,7 +49,6 @@ import {
 import { NetWorthWidget } from '@/components/finance/NetWorthWidget'
 import { SubscriptionsWidget } from '@/components/finance/SubscriptionsWidget'
 import { BudgetTrackerWidget } from '@/components/finance/BudgetTrackerWidget'
-import { BillsWidget } from '@/components/finance/BillsWidget'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -999,8 +999,21 @@ export function FinanceDashboard() {
           {/* Budget Tracker */}
           <BudgetTrackerWidget spending={spending} loadingSpending={loadingSpending} />
 
-          {/* Bills & Payments */}
-          <BillsWidget />
+          {/* Bills Quick Link */}
+          <Card className="border-dashed hover:border-solid hover:bg-muted/20 transition-all cursor-pointer" onClick={() => window.location.href = '/bills'}>
+            <CardContent className="py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted/60">
+                  <Receipt className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Bills &amp; Payments</p>
+                  <p className="text-xs text-muted-foreground">Manage your recurring bills</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
 
           {/* Transactions */}
           <Card>

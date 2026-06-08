@@ -12,12 +12,14 @@ import {
   Timer,
   Target,
   Wallet,
+  Receipt,
 } from 'lucide-react'
 
 const navItems = [
   { label: 'Home', href: '/', icon: LayoutDashboard },
   { label: 'Daily Focus', href: '/focus', icon: Target },
   { label: 'Finance', href: '/finance', icon: Wallet },
+  { label: 'Bills', href: '/bills', icon: Receipt },
   { label: 'Projects', href: '/projects', icon: FolderKanban },
   { label: 'Standup', href: '/standup', icon: ClipboardList },
   { label: 'Agents', href: '/agents', icon: Bot },
