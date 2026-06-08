@@ -45,6 +45,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { NetWorthWidget } from '@/components/finance/NetWorthWidget'
+import { SubscriptionsWidget } from '@/components/finance/SubscriptionsWidget'
+import { BudgetTrackerWidget } from '@/components/finance/BudgetTrackerWidget'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -949,7 +952,10 @@ export function FinanceDashboard() {
         />
       </div>
 
-      {/* ── B. Two-column layout ── */}
+      {/* ── B. Net Worth ── */}
+      <NetWorthWidget accounts={accounts} loading={loadingAccounts} />
+
+      {/* ── C. Two-column layout ── */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
 
         {/* Left 60% */}
@@ -988,6 +994,9 @@ export function FinanceDashboard() {
               )}
             </CardContent>
           </Card>
+
+          {/* Budget Tracker */}
+          <BudgetTrackerWidget spending={spending} loadingSpending={loadingSpending} />
 
           {/* Transactions */}
           <Card>
@@ -1033,6 +1042,9 @@ export function FinanceDashboard() {
               )}
             </CardContent>
           </Card>
+
+          {/* Subscriptions */}
+          <SubscriptionsWidget />
 
           {/* Sync Status */}
           <SyncCard
