@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   Receipt,
+  Repeat,
 } from 'lucide-react'
 import {
   PieChart,
@@ -47,7 +48,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { NetWorthWidget } from '@/components/finance/NetWorthWidget'
-import { SubscriptionsWidget } from '@/components/finance/SubscriptionsWidget'
 import { BudgetTrackerWidget } from '@/components/finance/BudgetTrackerWidget'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1060,8 +1060,21 @@ export function FinanceDashboard() {
             </CardContent>
           </Card>
 
-          {/* Subscriptions */}
-          <SubscriptionsWidget />
+          {/* Subscriptions Quick Link */}
+          <Card className="border-dashed hover:border-solid hover:bg-muted/20 transition-all cursor-pointer" onClick={() => window.location.href = '/subscriptions'}>
+            <CardContent className="py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted/60">
+                  <Repeat className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Subscriptions</p>
+                  <p className="text-xs text-muted-foreground">View recurring charges</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
 
           {/* Sync Status */}
           <SyncCard

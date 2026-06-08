@@ -14,6 +14,7 @@ import {
   Wallet,
   Receipt,
   ChevronRight,
+  Repeat,
 } from 'lucide-react'
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
     icon: Wallet,
     children: [
       { label: 'Bills', href: '/bills', icon: Receipt },
+      { label: 'Subscriptions', href: '/subscriptions', icon: Repeat },
     ],
   },
   { label: 'Projects',    href: '/projects',   icon: FolderKanban },
