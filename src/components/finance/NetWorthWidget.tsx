@@ -20,9 +20,12 @@ interface Account {
   is_hidden: boolean
 }
 
+const MASKED = '••••••'
+
 interface NetWorthWidgetProps {
   accounts: Account[]
   loading: boolean
+  privacyMode?: boolean
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -38,7 +41,7 @@ function formatUSD(amount: number): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function NetWorthWidget({ accounts, loading }: NetWorthWidgetProps) {
+export function NetWorthWidget({ accounts, loading, privacyMode }: NetWorthWidgetProps) {
   const visible = accounts.filter(a => !a.is_hidden)
 
   const assetAccounts = visible.filter(a => !a.is_liability)
@@ -71,10 +74,10 @@ export function NetWorthWidget({ accounts, loading }: NetWorthWidgetProps) {
         ) : (
           <p
             className={`text-3xl font-bold tabular-nums ${
-              isPositive ? 'text-emerald-500' : 'text-rose-500'
+              privacyMode ? 'text-muted-foreground' : isPositive ? 'text-emerald-500' : 'text-rose-500'
             }`}
           >
-            {formatUSD(netWorth)}
+            {privacyMode ? MASKED : formatUSD(netWorth)}
           </p>
         )}
 
@@ -89,8 +92,8 @@ export function NetWorthWidget({ accounts, loading }: NetWorthWidgetProps) {
               {loading ? (
                 <Skeleton className="h-5 w-24 mt-0.5" />
               ) : (
-                <p className="text-sm font-semibold tabular-nums text-emerald-500">
-                  {formatUSD(assets)}
+                <p className={`text-sm font-semibold tabular-nums ${privacyMode ? 'text-muted-foreground' : 'text-emerald-500'}`}>
+                  {privacyMode ? MASKED : formatUSD(assets)}
                 </p>
               )}
             </div>
@@ -104,8 +107,8 @@ export function NetWorthWidget({ accounts, loading }: NetWorthWidgetProps) {
               {loading ? (
                 <Skeleton className="h-5 w-24 mt-0.5" />
               ) : (
-                <p className="text-sm font-semibold tabular-nums text-rose-500">
-                  {formatUSD(liabilities)}
+                <p className={`text-sm font-semibold tabular-nums ${privacyMode ? 'text-muted-foreground' : 'text-rose-500'}`}>
+                  {privacyMode ? MASKED : formatUSD(liabilities)}
                 </p>
               )}
             </div>
@@ -127,8 +130,8 @@ export function NetWorthWidget({ accounts, loading }: NetWorthWidgetProps) {
                   {assetAccounts.map(a => (
                     <div key={a.id} className="flex items-center justify-between gap-2">
                       <p className="text-xs text-muted-foreground truncate flex-1">{a.name}</p>
-                      <p className="text-xs font-medium tabular-nums text-emerald-500 shrink-0">
-                        {formatUSD(parseFloat(a.balance))}
+                      <p className={`text-xs font-medium tabular-nums shrink-0 ${privacyMode ? 'text-muted-foreground' : 'text-emerald-500'}`}>
+                        {privacyMode ? MASKED : formatUSD(parseFloat(a.balance))}
                       </p>
                     </div>
                   ))}
@@ -148,8 +151,8 @@ export function NetWorthWidget({ accounts, loading }: NetWorthWidgetProps) {
                   {liabilityAccounts.map(a => (
                     <div key={a.id} className="flex items-center justify-between gap-2">
                       <p className="text-xs text-muted-foreground truncate flex-1">{a.name}</p>
-                      <p className="text-xs font-medium tabular-nums text-rose-500 shrink-0">
-                        {formatUSD(Math.abs(parseFloat(a.balance)))}
+                      <p className={`text-xs font-medium tabular-nums shrink-0 ${privacyMode ? 'text-muted-foreground' : 'text-rose-500'}`}>
+                        {privacyMode ? MASKED : formatUSD(Math.abs(parseFloat(a.balance)))}
                       </p>
                     </div>
                   ))}

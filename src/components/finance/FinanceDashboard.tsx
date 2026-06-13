@@ -18,6 +18,8 @@ import {
   XCircle,
   Receipt,
   Repeat,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import {
   PieChart,
@@ -95,6 +97,10 @@ interface ApiError {
   error: string
   offline?: boolean
 }
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const MASKED = '••••••'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -223,9 +229,11 @@ interface StatCardProps {
   positive?: boolean | null
   loading?: boolean
   subtitle?: string
+  privacyMode?: boolean
 }
 
-function StatCard({ label, value, icon, positive, loading, subtitle }: StatCardProps) {
+function StatCard({ label, value, icon, positive, loading, subtitle, privacyMode }: StatCardProps) {
+  const displayValue = privacyMode ? MASKED : value
   return (
     <Card>
       <CardContent className="pt-5 pb-5">
@@ -237,14 +245,16 @@ function StatCard({ label, value, icon, positive, loading, subtitle }: StatCardP
             ) : (
               <p
                 className={`text-2xl font-bold tabular-nums ${
-                  positive === true
+                  privacyMode
+                    ? 'text-muted-foreground'
+                    : positive === true
                     ? 'text-emerald-500'
                     : positive === false
                     ? 'text-rose-500'
                     : 'text-foreground'
                 }`}
               >
-                {value}
+                {displayValue}
               </p>
             )}
             {subtitle && !loading && (
@@ -260,7 +270,7 @@ function StatCard({ label, value, icon, positive, loading, subtitle }: StatCardP
 
 // ─── Account Card ─────────────────────────────────────────────────────────────
 
-function AccountCard({ account }: { account: Account }) {
+function AccountCard({ account, privacyMode }: { account: Account; privacyMode?: boolean }) {
   const balance = parseFloat(account.balance)
   const isNegative = balance < 0
   const initials = getInitials(account.org_name || account.name)
@@ -287,8 +297,8 @@ function AccountCard({ account }: { account: Account }) {
       </div>
 
       <div className="text-right shrink-0">
-        <p className={`text-sm font-semibold tabular-nums ${isNegative ? 'text-rose-500' : 'text-emerald-500'}`}>
-          {formatUSD(balance)}
+        <p className={`text-sm font-semibold tabular-nums ${privacyMode ? 'text-muted-foreground' : isNegative ? 'text-rose-500' : 'text-emerald-500'}`}>
+          {privacyMode ? MASKED : formatUSD(balance)}
         </p>
         {account.balance_date && (
           <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -720,6 +730,9 @@ function TransactionsTable({ transactions, accounts, loading, error, onRetry }: 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export function FinanceDashboard() {
+  // Privacy toggle
+  const [privacyMode, setPrivacyMode] = useState(false)
+
   // Data state
   const [accounts, setAccounts] = useState<Account[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -906,15 +919,26 @@ export function FinanceDashboard() {
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">Your money, at a glance</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void Promise.all([fetchAccounts(), fetchTransactions(), fetchSpending(), fetchSyncStatus()])}
-          disabled={anyLoading}
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${anyLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPrivacyMode(p => !p)}
+            aria-label={privacyMode ? 'Show balances' : 'Hide balances'}
+          >
+            {privacyMode ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            {privacyMode ? 'Show' : 'Hide'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void Promise.all([fetchAccounts(), fetchTransactions(), fetchSpending(), fetchSyncStatus()])}
+            disabled={anyLoading}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${anyLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* ── A. Summary Stats ── */}
@@ -926,6 +950,7 @@ export function FinanceDashboard() {
           positive={totalBalance >= 0 ? true : false}
           loading={loadingAccounts}
           subtitle={`${accounts.length} account${accounts.length !== 1 ? 's' : ''}`}
+          privacyMode={privacyMode}
         />
         <StatCard
           label="Monthly Spending"
@@ -934,6 +959,7 @@ export function FinanceDashboard() {
           positive={false}
           loading={loadingTransactions}
           subtitle="This month"
+          privacyMode={privacyMode}
         />
         <StatCard
           label="Monthly Income"
@@ -942,6 +968,7 @@ export function FinanceDashboard() {
           positive={true}
           loading={loadingTransactions}
           subtitle="This month"
+          privacyMode={privacyMode}
         />
         <StatCard
           label="Net Cash Flow"
@@ -950,11 +977,12 @@ export function FinanceDashboard() {
           positive={netCashFlow >= 0 ? true : false}
           loading={loadingTransactions}
           subtitle="Income − spending"
+          privacyMode={privacyMode}
         />
       </div>
 
       {/* ── B. Net Worth ── */}
-      <NetWorthWidget accounts={accounts} loading={loadingAccounts} />
+      <NetWorthWidget accounts={accounts} loading={loadingAccounts} privacyMode={privacyMode} />
 
       {/* ── C. Two-column layout ── */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
@@ -989,7 +1017,7 @@ export function FinanceDashboard() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {accounts.filter(a => !a.is_hidden).map(a => (
-                    <AccountCard key={a.id} account={a} />
+                    <AccountCard key={a.id} account={a} privacyMode={privacyMode} />
                   ))}
                 </div>
               )}
