@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import { getAgents } from '@/lib/firebase/agents'
 import { getRecentEvents } from '@/lib/firebase/monitoring'
 import { Agent } from '@/lib/types'
@@ -18,6 +19,7 @@ import {
   formatTokens,
 } from '@/lib/firebase/agentMetrics'
 import { formatDistanceToNow } from 'date-fns'
+import ClaudeCodeAgentsSection from '@/components/agents/ClaudeCodeAgentsSection'
 
 // ─── Status helpers ──────────────────────────────────────────────────────────
 
@@ -111,6 +113,11 @@ function TokenBar({ metrics, max }: { metrics: AgentMetrics; max: number }) {
           <div className="bg-violet-500 flex-1" />
         </div>
       </div>
+
+      <Separator />
+
+      <ClaudeCodeAgentsSection />
+
     </div>
   )
 }
