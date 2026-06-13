@@ -379,6 +379,11 @@ export default function AgentsPage() {
 
         </div>
       </div>
+
+      <Separator />
+
+      <ClaudeCodeAgentsSection />
+
     </div>
   )
 }
